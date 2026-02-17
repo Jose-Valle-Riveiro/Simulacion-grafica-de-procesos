@@ -4,7 +4,7 @@ queue = []
 counter = 1  # Para numerar los elementos
 
 def setup():
-    size(900, 300)
+    size(1080, 720)
     textAlign(CENTER, CENTER)
     textSize(16)
 
