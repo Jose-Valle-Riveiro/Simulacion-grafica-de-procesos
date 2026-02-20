@@ -56,7 +56,7 @@ def draw():
     background(240)
 
     fill(0)
-    text("SRTF - Short Remaining Time First", 20, 20)
+    text("SJF - Shortest Job First (No Expropiativo)", 20, 20)
     text("Velocidad: {} ms por unidad".format(interval), 20, 430)
 
     pid_box.draw()
@@ -127,7 +127,7 @@ def draw_process_list():
 
 def draw_timeline():
     fill(0)
-    text("Timeline:", 20, 300)
+    text("Timeline (Diagrama de Gantt):", 20, 300)
 
     x = 20
     y = 320
@@ -137,10 +137,20 @@ def draw_timeline():
         if x > max_width:
             text("...", x, y+25)
             break
-        fill(color_from_id(t))
+        
+        # Color gris para tiempo ocioso (0), color dinámico para procesos
+        if t == 0:
+            fill(200)
+        else:
+            fill(color_from_id(t))
+            
         rect(x, y, 30, 40)
-        fill(0)
-        text("P{}".format(t), x+5, y+25)
+        
+        if t != 0:
+            fill(0)
+            textSize(10) # Texto un poco más pequeño para el ID
+            text("P{}".format(t), x+5, y+25)
+            textSize(14)
         x += 32
 
     fill(0)
@@ -148,24 +158,31 @@ def draw_timeline():
     
     if simulation_running:
         fill(0, 150, 0)
-        text("▶ SIMULANDO", 20, 400)
+        text("EJECUTANDO SJF", 20, 400)
     elif simulation_started and all(p.finalizado for p in procesos):
         fill(150, 150, 0)
-        text("■ COMPLETADA", 20, 400)
+        text("SIMULACIÓN FINALIZADA", 20, 400)
 
 def simulate_step():
     global current_time, running
 
-    disponibles = [p for p in procesos if p.llegada <= current_time and not p.finalizado]
-
-    if disponibles:
-        running = min(disponibles, key=lambda p: p.restante)
+    # Si NO hay un proceso ejecutándose, buscamos el más corto de los disponibles
+    if running is None:
+        disponibles = [p for p in procesos if p.llegada <= current_time and not p.finalizado]
+        if disponibles:
+            # Seleccionamos el de menor ráfaga (SJF)
+            running = min(disponibles, key=lambda p: p.rafaga)
+    
+    # Si hay un proceso en ejecución (ya sea que venía de antes o acaba de empezar)
+    if running:
         running.restante -= 1
         timeline.append(running.pid)
 
         if running.restante == 0:
             running.finalizado = True
+            running = None # Liberamos la CPU al terminar
     else:
+        # CPU Ociosa
         timeline.append(0)
 
     current_time += 1
